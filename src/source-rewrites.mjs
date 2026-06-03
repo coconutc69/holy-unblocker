@@ -24,7 +24,7 @@ export { paintSource as default };
  * For automatically recompiling in production mode, see ecosystem.config.js.
  */
 const regExpEscape = /[-[\]{}()*+?.,\\^$#\s]/g,
-  basicStrEscape = /["'`$\\]/g,
+  basicStrEscape = /["'`\\]/g,
   charset = /&#173;|&#8203;|&shy;|<wbr>/gi,
   subtermsByCaps = /[A-Z]?[^A-Z]+|[A-Z]/g,
   subtermsByVowels = /(?<=[AEIOUYaeiouy])(?!$)/g,

@@ -12,17 +12,36 @@
 
 // To be defined after the document has fully loaded.
 let uvConfig = {};
-let sjEncode = {};
+let sjBundle = null;
+const FRAME_URL_KEY = '{{hu-lts}}-frame-url';
+const SJ_PREFIX_TAG = 'sj:';
+
 // Get the preferred apex domain name. Not exactly apex, as any
 // subdomain other than those listed will be ignored.
 const getDomain = () =>
     location.host.replace(/^(?:www|beta)\./, ''),
   // This is used for stealth mode when visiting external sites.
   goFrame = (url) => {
-    localStorage.setItem('{{hu-lts}}-frame-url', url);
+    localStorage.setItem(FRAME_URL_KEY, url);
     if (location.pathname !== '{{route}}{{/s}}')
       location.href = '{{route}}{{/s}}?cache={{cacheVal}}';
-    else document.getElementById('frame').src = url;
+    else navigateLocalFrame(url);
+  },
+  navigateLocalFrame = (target) => {
+    const windowFrame = document.getElementById('frame');
+    if (!windowFrame || !target) return;
+    if (!target.startsWith(SJ_PREFIX_TAG)) {
+      windowFrame.src = target;
+      return;
+    }
+    const rawUrl = target.slice(SJ_PREFIX_TAG.length);
+    const tryGo = () => {
+      const f = sjBundle && sjBundle.frame;
+      if (f && typeof f.go === 'function') f.go(rawUrl);
+    };
+    if (sjBundle && sjBundle.ready) tryGo();
+    else
+      window.addEventListener('s-ready', tryGo, { once: true });
   },
   /* Used to set functions for the goProx object at the bottom.
    * See the goProx object at the bottom for some usage examples
@@ -34,6 +53,7 @@ const getDomain = () =>
         // Should help avoid confusion when using or adding to the goProx object.
         (url, mode) => {
           if (!url) return;
+          if (parser === sjUrl) mode = 'stealth';
           url = parser(url);
           mode = `${mode}`.toLowerCase();
           if (mode === 'stealth' || mode == 1) goFrame(url);
@@ -46,6 +66,12 @@ const getDomain = () =>
           else if (mode === 'window' || mode == 0) location.href = parser;
           else return parser;
         },
+  sjPreset = (rawUrl) => (mode) => {
+    mode = `${mode}`.toLowerCase();
+    if (mode === 'window' || mode == 0 || mode === 'stealth' || mode == 1)
+      goFrame(sjUrl(rawUrl));
+    else return sjUrl(rawUrl);
+  },
   openBlankCloak = () => {
       try {
         const newWindow = window.open('about:blank', '_blank');
@@ -150,26 +176,90 @@ const searchEngines = Object.freeze({
   });
 
 // Get the autocomplete results for a given search query in JSON format.
+let activeACController = null;
 const requestAC = async (
   baseUrl,
   query,
   parserFunc = (url) => url,
   params = {}
 ) => {
-  switch (parserFunc) {
-    case sjUrl: {
-      // Ask Scramjet to process the autocomplete request. Processed results will
-      // be returned to an event handler and are updated from there.
-      params.port.postMessage({
-        type: params.searchType,
-        request: {
-          url: parserFunc(baseUrl + encodeURIComponent(query)),
-          headers: new Map([['Date', params.time]]),
-        },
-      });
-      break;
+  if (parserFunc !== sjUrl) return;
+  if (!sjBundle?.ready || !sjBundle.frame) return;
+
+  const transport =
+    sjBundle.frame.fetchHandler?.client?.transport ||
+    sjBundle.controller?.transport;
+  if (!transport || typeof transport.request !== 'function') return;
+
+  if (transport.ready === false && typeof transport.init === 'function') {
+    try {
+      await transport.init();
+    } catch {
+      return;
     }
   }
+
+  if (activeACController) {
+    try {
+      activeACController.abort();
+    } catch {}
+  }
+  const controller = new AbortController();
+  activeACController = controller;
+
+  const targetUrl = baseUrl + encodeURIComponent(query);
+  let remoteUrl;
+  try {
+    remoteUrl = new URL(targetUrl);
+  } catch {
+    return;
+  }
+
+  let responseJSON;
+  try {
+    const response = await transport.request(
+      remoteUrl,
+      'GET',
+      null,
+      [['accept', 'application/json, text/plain, */*']],
+      controller.signal
+    );
+    if (controller.signal.aborted) return;
+
+    const status = typeof response.status === 'number' ? response.status : 0;
+    if (status < 200 || status >= 300) return;
+
+    let text;
+    if (response.body instanceof ReadableStream) {
+      text = await new Response(response.body).text();
+    } else if (response.body instanceof ArrayBuffer) {
+      text = new TextDecoder().decode(response.body);
+    } else if (typeof response.body === 'string') {
+      text = response.body;
+    } else {
+      text = await new Response(response.body).text();
+    }
+
+    try {
+      responseJSON = JSON.parse(text);
+    } catch {
+      try {
+        responseJSON = JSON.parse(text.replace(/^[^[{]*|[^\]}]*$/g, ''));
+      } catch {
+        return;
+      }
+    }
+  } catch {
+    return;
+  }
+
+  if (controller.signal.aborted) return;
+
+  updateAC(
+    params.listElement,
+    responseHandlers[params.searchType](responseJSON),
+    Date.parse(params.time)
+  );
 };
 
 let lastUpdated = Date.parse(new Date().toUTCString());
@@ -235,16 +325,7 @@ const getSearchTemplate = (
     }
     return url;
   },
-  // Parse a URL to use with Scramjet.
-  sjUrl = (url) => {
-    try {
-      url = location.origin + sjEncode(search(url));
-    } catch (e) {
-      // This is for cases where the SJ scripts have not been loaded.
-      url = search(url);
-    }
-    return url;
-  }
+  sjUrl = (url) => SJ_PREFIX_TAG + search(url)
 
 /* To use:
  * goProx.proxy(url-string, mode-as-string-or-number);
@@ -274,11 +355,16 @@ const getSearchTemplate = (
 const preparePage = async () => {
   // This won't break the service workers as they store the variable separately.
   uvConfig = self['{{__uv$config}}'];
-  sjObject = self['$scramjetLoadController'];
-  if (sjObject)
-    sjEncode = new (sjObject().ScramjetController)({
-      prefix: '{{route}}{{/scram/network/}}',
-    }).encodeUrl;
+
+  if (window.$invisiScramjet?.ready) sjBundle = window.$invisiScramjet;
+  else
+    window.addEventListener(
+      's-ready',
+      () => {
+        sjBundle = window.$invisiScramjet;
+      },
+      { once: true }
+    );
 
   // Object.freeze prevents goProx from accidentally being edited.
   const goProx = Object.freeze({
@@ -294,43 +380,43 @@ const preparePage = async () => {
 
     osu: urlHandler(location.origin + '{{route}}{{/archive/osu}}'),
 
-    agar: urlHandler(sjUrl('https://agar.io')),
+    agar: sjPreset('https://agar.io'),
 
-    tru: urlHandler(sjUrl('https://truffled.lol/g')),
+    tru: sjPreset('https://truffled.lol/g'),
 
-    prison: urlHandler(sjUrl('https://vimlark.itch.io/pick-up-prison')),
+    prison: sjPreset('https://vimlark.itch.io/pick-up-prison'),
 
-    speed: urlHandler(sjUrl('https://captain4lk.itch.io/what-the-road-brings')),
+    speed: sjPreset('https://captain4lk.itch.io/what-the-road-brings'),
 
-    heli: urlHandler(sjUrl('https://benjames171.itch.io/helo-storm')),
+    heli: sjPreset('https://benjames171.itch.io/helo-storm'),
 
     youtube: urlHandler(uvUrl('https://michael.team/yt/')),
 
-    invidious: urlHandler(sjUrl('https://invidious.snopyta.org')),
+    invidious: sjPreset('https://invidious.snopyta.org'),
 
-    chatgpt: urlHandler(sjUrl('https://chat.openai.com/chat')),
+    chatgpt: sjPreset('https://chat.openai.com/chat'),
 
-    fmhy: urlHandler(sjUrl('https://fmhy.net')),
+    fmhy: sjPreset('https://fmhy.net'),
 
-    discord: urlHandler(sjUrl('https://discord.com/app')),
+    discord: sjPreset('https://discord.com/app'),
 
-    geforcenow: urlHandler(sjUrl('https://play.geforcenow.com/mall')),
+    geforcenow: sjPreset('https://play.geforcenow.com/mall'),
 
-    spotify: urlHandler(sjUrl('https://open.spotify.com')),
+    spotify: sjPreset('https://open.spotify.com'),
 
-    tiktok: urlHandler(sjUrl('https://www.tiktok.com')),
+    tiktok: sjPreset('https://www.tiktok.com'),
 
-    animetsu: urlHandler(sjUrl('https://animetsu.net')),
+    animetsu: sjPreset('https://animetsu.net'),
 
-    twitter: urlHandler(sjUrl('https://twitter.com')),
+    twitter: sjPreset('https://twitter.com'),
 
-    twitch: urlHandler(sjUrl('https://www.twitch.tv')),
+    twitch: sjPreset('https://www.twitch.tv'),
 
-    instagram: urlHandler(sjUrl('https://www.instagram.com')),
+    instagram: sjPreset('https://www.instagram.com'),
 
-    reddit: urlHandler(sjUrl('https://www.reddit.com')),
+    reddit: sjPreset('https://www.reddit.com'),
 
-    wikipedia: urlHandler(sjUrl('https://www.wikiwand.com')),
+    wikipedia: sjPreset('https://www.wikiwand.com'),
 
   });
 
@@ -418,31 +504,6 @@ const preparePage = async () => {
       });
 
       if (prAC) {
-        // Set up a message channel to communicate with Scramjet, if it exists.
-        let autocompleteChannel = {},
-          sjLoaded = false;
-        if (sjObject) {
-          autocompleteChannel = new MessageChannel();
-          callAfterWorkers(['{{route}}{{/scram/scramjet.sw.js}}'], (worker) => {
-            worker.active.postMessage({ type: 'requestAC' }, [
-              autocompleteChannel.port2,
-            ]);
-            sjLoaded = true;
-          });
-
-          // Update the autocomplete results if Scramjet has processed them.
-          autocompleteChannel.port1.addEventListener('message', ({ data }) => {
-            updateAC(
-              prAC,
-              responseHandlers[data.searchType](data.responseJSON),
-              Date.parse(data.time)
-            );
-            sjLoaded = true;
-          });
-
-          autocompleteChannel.port1.start();
-        }
-
         // Get autocomplete search results when typing in the omnibox.
         prUrl.addEventListener('input', async (e) => {
           // Prevent excessive fetch requests by restricting when requests are made.
@@ -466,10 +527,9 @@ const preparePage = async () => {
             let searchType = readStorage('SearchEngine');
             if (!(searchType in autocompletes)) searchType = defaultSearch;
             const requestTime = new Date().toUTCString();
-            sjLoaded = false;
             requestAC('https://' + autocompletes[searchType], query, sjUrl, {
               searchType: searchType,
-              port: autocompleteChannel.port1,
+              listElement: prAC,
               time: requestTime,
             });
           }
@@ -532,24 +592,18 @@ const preparePage = async () => {
   prSet('pr-wa', 'wikipedia');
 
   // Load the frame for stealth mode if it exists.
-  const windowFrame = document.getElementById('frame'),
-    loadFrame = () => {
-      windowFrame.src = localStorage.getItem('{{hu-lts}}-frame-url');
-      return true;
-    };
+  const windowFrame = document.getElementById('frame');
   if (windowFrame) {
-    if (uvConfig && sjObject)
-      (await callAfterWorkers(
-        [
-          '{{route}}{{/scram/scramjet.sw.js}}',
-          '{{route}}{{/uv/sw.js}}',
-          '{{route}}{{/uv/sw-blacklist.js}}',
-        ],
-        loadFrame,
-        2,
-        3
-      )) || loadFrame();
-    else loadFrame();
+    const sjReady = sjBundle?.ready
+      ? Promise.resolve()
+      : new Promise((resolve) =>
+          window.addEventListener('s-ready', resolve, {
+            once: true,
+          })
+        );
+    await sjReady;
+    const target = localStorage.getItem(FRAME_URL_KEY);
+    if (target) navigateLocalFrame(target);
   }
 
   const useModule = (moduleFunc, tries = 0) => {

@@ -19,16 +19,23 @@ import {
   flatAltPaths,
   splashRandom,
 } from './src/routes.mjs';
-import { epoxyPath } from '@mercuryworkshop/epoxy-transport';
-import { libcurlPath } from '@mercuryworkshop/libcurl-transport';
 import { baremuxPath } from '@mercuryworkshop/bare-mux/node';
 import { uvPath } from '@titaniumnetwork-dev/ultraviolet';
+import { scramjetPath } from '@mercuryworkshop/scramjet/path';
 import paintSource from './src/source-rewrites.mjs';
 import { loadTemplates, tryReadFile } from './src/templates.mjs';
 
-const scramjetPath = join(
-  dirname(fileURLToPath(import.meta.url)),
-  'node_modules/@mercuryworkshop/scramjet/dist'
+const modPath = (subpath) =>
+  join(
+    dirname(fileURLToPath(import.meta.url)),
+    'node_modules',
+    ...subpath.split('/')
+  );
+
+const epoxyPath = modPath('@mercuryworkshop/epoxy-transport/dist');
+const libcurlPath = modPath('@mercuryworkshop/libcurl-transport/dist');
+const scramjetControllerPath = modPath(
+  '@mercuryworkshop/scramjet-controller/dist'
 );
 
 // This constant is copied over from /src/server.mjs.
@@ -180,7 +187,7 @@ commands: for (let i = 2; i < process.argv.length; i++)
           }
         });
 
-      const localAssetDirs = ['assets', 'scram', 'uv'];
+      const localAssetDirs = ['assets', 'uv'];
       for (const path of localAssetDirs) {
         mkdirSync('./views/dist-new/' + path);
         compile('./views/' + path, '', path + '/', './views/' + path, true);
@@ -188,20 +195,21 @@ commands: for (let i = 2; i < process.argv.length; i++)
 
       // Combine scripts from the corresponding node modules into the same
       // dist-generated directories for compiling, and avoid overwriting files.
-      const compilePaths = {
-        epoxy: epoxyPath,
-        libcurl: libcurlPath,
-        baremux: baremuxPath,
-        uv: uvPath,
-        scram: scramjetPath,
-        chii: 'node_modules/chii',
-      };
-      for (const path of Object.entries(compilePaths)) {
-        const prefix = path[0] + '/',
+      const compilePaths = [
+        ['epoxy', epoxyPath],
+        ['libcurl', libcurlPath],
+        ['baremux', baremuxPath],
+        ['uv', uvPath],
+        ['scram', scramjetPath],
+        ['scram', scramjetControllerPath],
+        ['chii', 'node_modules/chii'],
+      ];
+      for (const [prefixName, srcPath] of compilePaths) {
+        const prefix = prefixName + '/',
           prefixUrl = new URL('./views/dist-new/' + prefix, import.meta.url);
         if (!existsSync(prefixUrl)) mkdirSync(prefixUrl);
 
-        compile(path[1].slice(path[1].indexOf('node_modules')), '', prefix);
+        compile(srcPath.slice(srcPath.indexOf('node_modules')), '', prefix);
       }
 
       // Minify the scripts and stylesheets upon compiling, if enabled in config.
@@ -209,8 +217,6 @@ commands: for (let i = 2; i < process.argv.length; i++)
         await build({
           entryPoints: [
             './views/dist-new/uv/**/*.js',
-            './views/dist-new/scram/**/*.js',
-            './views/dist-new/scram/**/*.wasm.wasm',
             './views/dist-new/assets/js/**/*.js',
             './views/dist-new/assets/css/**/*.css',
           ],
@@ -218,7 +224,6 @@ commands: for (let i = 2; i < process.argv.length; i++)
           sourcemap: true,
           bundle: true,
           minify: true,
-          loader: { '.wasm.wasm': 'copy' },
           external: ['*.png', '*.jpg', '*.jpeg', '*.webp', '*.svg'],
           outdir: dist,
           allowOverwrite: true,

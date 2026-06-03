@@ -8,6 +8,7 @@ import {
   serverUrl,
   pages,
   externalPages,
+  flatAltPaths,
   getAltPrefix,
 } from './routes.mjs';
 import { tryReadFile, preloaded404 } from './templates.mjs';
@@ -40,27 +41,12 @@ const wisp = new Mrrowisp({
   trustedHeaders: ['CF-Connecting-IP', 'X-Forwarded-For'],
 
   whitelist: {
-    hostnames: [],
     ports: [
       80,
       443,
       9050,
       7000,
       7001
-    ],
-  },
-
-  blacklist: {
-    hostnames: [],
-    ports: [
-      6881, 
-      6889,
-      6969,
-      1337,
-      6969, 
-      51413,
-      49152, 
-      65535
     ],
   },
 
@@ -200,6 +186,16 @@ app.register(fastifyStatic, {
   ),
   prefix: getAltPrefix('uauth', serverUrl.pathname),
   decorateReply: false,
+});
+
+['sw.js', 'sw-blacklist.js'].forEach((swFile) => {
+  const distName = flatAltPaths['files/' + swFile] || swFile;
+  app.get(serverUrl.pathname + distName, (req, reply) => {
+    reply
+      .type('application/javascript')
+      .header('Service-Worker-Allowed', serverUrl.pathname)
+      .send(tryReadFile('../views/dist/' + distName, import.meta.url));
+  });
 });
 
 /* If you are trying to add pages or assets in the root folder and

@@ -2,21 +2,23 @@ This will be our nonexhaustive todo list for InvisiProxy LTS v6.x.x and above. R
 
 ## Priority
 
+- [ ] Make InvisiProxy work on Firefox (requires downloading malware to test :()
+- [ ] Fix abnormal search handling
 - [ ] Class managling and DOM masquerading functionality to Scramjet (or stealth window) 
 - [ ] Font obfuscation middleware
-- [ ] Update to Scramjet v2.0.67-alpha
-- [ ] Update to use scramjetFrame instead of our own window handling (or whatever 2.0.67-alpha requires)
 - [ ] Implement multi-lang support!
 
 ## Proxy/Site Functionality
-- [ ] Add booksmark menu (source wise already present pretty much)
+- [ ] Add bookmarks menu (source wise already present pretty much)
 - [ ] Add Chii + ensuring users can access devtools while browsing - partial
 - [ ] Omnibox should state what the current site the user is on like a proper URL bar 
 - [ ] Improve adblocking functions on site using Workerware + a pre-bundled uBlock Origin
 - [ ] Implement advanced data URI system
 - [ ] Allow custom Wisp urls from the settings menu (not config side)
 - [ ] Setting to open multiple stealth frames; basically about:blank but using our system. Pops out in another tab
-- [x] Swap to pnpm and node 26
+- [x] Update to Scramjet v2.0.67-alpha - done
+- [x] Update to use scramjetFrame instead of our own window handling (or whatever 2.0.67-alpha requires) - done
+- [x] Swap to pnpm and node 26 - done
 - [x] Swap to mrrowisp over wisp-js for security and performance - done
 - [x] Hide local browser history on launch - done
 - [x] Setting to open about:blank and blob frames - done

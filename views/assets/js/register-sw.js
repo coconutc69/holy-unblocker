@@ -1,11 +1,6 @@
 (() => {
-  const swRoutes = {
-      uv: ['{{route}}{{/uv/sw.js}}', '{{route}}{{/uv/sw-blacklist.js}}'],
-      sj: [
-        '{{route}}{{/scram/scramjet.sw.js}}',
-        '{{route}}{{/scram/scramjet.sw-blacklist.js}}'
-      ],
-    },
+  const swRoutes = ['{{route}}{{/sw.js}}', '{{route}}{{/sw-blacklist.js}}'],
+    swScope = '{{route}}{{/}}',
     swAllowedHostnames = ['localhost', '127.0.0.1'],
     wispUrl =
       (location.protocol === 'https:' ? 'wss' : 'ws') +
@@ -27,85 +22,142 @@
     defaultMode = '{{epoxy}}';
 
   transports.default = transports[defaultMode];
-
   Object.freeze(transports);
 
-  const registerSW = async () => {
+  const getTransportSelection = () => {
+    const url = transports[readStorage('Transport')] || transports.default;
+    const options = { wisp: wispUrl };
+    if ('string' === typeof readStorage('UseSocks5'))
+      options.proxy = proxyUrl[readStorage('UseSocks5')];
+    return { url, options };
+  };
+
+  const registerCombinedSW = async () => {
     if (!navigator.serviceWorker) {
       if (
         location.protocol !== 'https:' &&
         !swAllowedHostnames.includes(location.hostname)
       )
         throw new Error('Service workers cannot be registered without https.');
-
       throw new Error("Your browser doesn't support service workers.");
     }
 
-    // Set the transport mode
-    const transportMode =
-      transports[readStorage('Transport')] || transports.default;
-    let transportOptions = { wisp: wispUrl };
-
-    // Socks5 proxy options
-    if ('string' === typeof readStorage('UseSocks5'))
-      transportOptions.proxy = proxyUrl[readStorage('UseSocks5')];
-
-    console.log('Using proxy:', transportOptions.proxy);
-    console.log('Transport mode:', transportMode);
-
-    const connection = new BareMux.BareMuxConnection('{{route}}{{/baremux/worker.js}}');
-    await connection.setTransport(transportMode, [transportOptions]);
-
-    const registrations = await navigator.serviceWorker.getRegistrations(),
-      usedSW = swRoutes.uv[readStorage('HideAds') !== false ? 1 : 0];
-
-    console.log('Service Worker being registered:', usedSW);
-
-    // Unregister outdated service workers
-    for (const registration of registrations)
-      if (
-        registration.active &&
-        new URL(registration.active.scriptURL).pathname !==
-          new URL(usedSW, location.origin).pathname
-      )
+    const sw = swRoutes[readStorage('HideAds') !== false ? 1 : 0];
+    const path = new URL(sw, location.origin).pathname;
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    for (const registration of registrations) {
+      const active = registration.active;
+      if (!active) continue;
+      if (new URL(active.scriptURL).pathname !== path)
         await registration.unregister();
+    }
 
-    await navigator.serviceWorker.register(usedSW);
+    console.log('Registering combined service worker:', sw);
+    const registration = await navigator.serviceWorker.register(sw, {
+      scope: swScope,
+    });
+
+    await navigator.serviceWorker.ready;
+    if (!navigator.serviceWorker.controller) {
+      await new Promise((resolve) => {
+        const onChange = () => {
+          navigator.serviceWorker.removeEventListener(
+            'controllerchange',
+            onChange
+          );
+          resolve();
+        };
+        navigator.serviceWorker.addEventListener(
+          'controllerchange',
+          onChange,
+          { once: true }
+        );
+        setTimeout(resolve, 5000);
+      });
+    }
+
+    return registration;
   };
 
-  const initializeScramjet = async () => {
-    try {
-      const { ScramjetController } = await $scramjetLoadController();
-
-      const scramjet = new ScramjetController({
-        prefix: '{{route}}{{/scram/network/}}',
-        files: {
-          wasm: '{{route}}{{/scram/scramjet.wasm.wasm}}',
-          all: '{{route}}{{/scram/scramjet.all.js}}',
-          sync: '{{route}}{{/scram/scramjet.sync.js}}',
-        },
-        flags: {
-          rewriterLogs: false,
-          naiiveRewriter: false,
-          scramitize: false,
-        },
-      });
-
-      console.log('Initializing ScramjetController');
-      scramjet.init();
-      navigator.serviceWorker.register(
-        swRoutes.sj[readStorage('HideAds') !== false ? 1 : 0]
-      );
-    } catch (err) {
-      console.error('Scramjet initialization failed:', err);
-    }
+  const buildScramjetTransport = async () => {
+    const { url, options } = getTransportSelection();
+    const mod = await import(url);
+    const TransportClient = mod.default;
+    return new TransportClient(options);
   };
 
   const initialize = async () => {
     try {
-      await registerSW();
+      if (window.$invisiScramjet?.ready) {
+        const existing = window.$invisiScramjet;
+        const visibleFrame = document.getElementById('frame');
+        if (
+          visibleFrame instanceof HTMLIFrameElement &&
+          existing.frame?.element !== visibleFrame
+        ) {
+          existing.frame = existing.controller.createFrame(visibleFrame);
+        }
+        window.dispatchEvent(new Event('s-ready'));
+        return;
+      }
 
-      await initializeScramjet();
+      const { url: transportUrl, options: transportOptions } =
+        getTransportSelection();
+      console.log('Using proxy:', transportOptions.proxy);
+      console.log('Transport mode:', transportUrl);
+      const baremux = new BareMux.BareMuxConnection(
+        '{{route}}{{/baremux/worker.js}}'
+      );
+      await baremux.setTransport(transportUrl, [transportOptions]);
+
+      const registration = await registerCombinedSW();
+
+      const serviceworker =
+        navigator.serviceWorker.controller ?? registration.active;
+      if (!serviceworker)
+        throw new Error('No service worker available for Scramjet controller');
+
+      const { Controller } = $scramjetController;
+      const { defaultConfig } = $scramjet;
+      const transport = await buildScramjetTransport();
+      const controller = new Controller({
+        serviceworker,
+        transport,
+        config: {
+          prefix: '{{route}}{{/scram/network/}}',
+          scramjetPath: '{{route}}{{/scram/scramjet.js}}',
+          wasmPath: '{{route}}{{/scram/scramjet.wasm}}',
+          injectPath: '{{route}}{{/scram/controller.inject.js}}',
+        },
+        scramjetConfig: {
+          ...defaultConfig,
+          flags: {
+            ...defaultConfig.flags,
+            allowFailedIntercepts: true,
+            allowInvalidJs: true,
+          },
+        },
+      });
+
+      await controller.wait();
+      console.log('Scramjet controller initialized');
+
+      const visibleFrame = document.getElementById('frame');
+      let frame;
+      if (visibleFrame instanceof HTMLIFrameElement) {
+        frame = controller.createFrame(visibleFrame);
+      } else {
+        const hidden = document.createElement('iframe');
+        hidden.setAttribute('aria-hidden', 'true');
+        hidden.tabIndex = -1;
+        hidden.style.cssText =
+          'position:fixed;width:0;height:0;border:0;visibility:hidden;pointer-events:none;';
+        document.body.appendChild(hidden);
+        frame = controller.createFrame(hidden);
+      }
+
+      window.$invisiScramjet = { controller, frame, ready: true };
+      window.dispatchEvent(new Event('s-ready'));
     } catch (err) {
       console.error('Initialization failed:', err);
     }

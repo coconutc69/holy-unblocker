@@ -143,11 +143,13 @@ let altPaths = {
   'mrrowisp': 'mrw',
   /* Raw File Names */
   files: {
-    'scramjet.all.js': 'working.all.js',
-    'scramjet.sw.js': 'working.sw.js',
-    'scramjet.sw-blacklist.js': 'working.sw-blacklist.js',
-    'scramjet.sync.js': 'working.sync.js',
-    'scramjet.wasm.wasm': 'working.wasm.wasm',
+    'sw.js': 'service.js',
+    'sw-blacklist.js': 'service-blacklist.js',
+    'scramjet.js': 'working.js',
+    'scramjet.wasm': 'working.wasm',
+    'controller.api.js': 'working-ctrl.api.js',
+    'controller.sw.js': 'working-ctrl.sw.js',
+    'controller.inject.js': 'working-ctrl.inject.js',
     'uv.handler.js': 'networking.handler.js',
     'uv.client.js': 'networking.client.js',
     'uv.bundle.js': 'networking.bundle.js',

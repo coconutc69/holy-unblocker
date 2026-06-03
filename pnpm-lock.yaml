@@ -18,14 +18,17 @@ importers:
         specifier: ^2.1.9
         version: 2.1.9
       '@mercuryworkshop/epoxy-transport':
-        specifier: ^2.1.28
-        version: 2.1.28
+        specifier: ^3.0.1
+        version: 3.0.1
       '@mercuryworkshop/libcurl-transport':
-        specifier: ^1.5.2
-        version: 1.5.2
+        specifier: ^2.0.5
+        version: 2.0.5
       '@mercuryworkshop/scramjet':
-        specifier: ^1.1.0
-        version: 1.1.0
+        specifier: 2.0.67-alpha.1
+        version: 2.0.67-alpha.1
+      '@mercuryworkshop/scramjet-controller':
+        specifier: 0.0.13
+        version: 0.0.13(@mercuryworkshop/scramjet@2.0.67-alpha.1)
       '@titaniumnetwork-dev/ultraviolet':
         specifier: ^3.2.10
         version: 3.2.10
@@ -309,6 +312,9 @@ packages:
   '@fastify/ajv-compiler@4.0.5':
     resolution: {integrity: sha512-KoWKW+MhvfTRWL4qrhUwAAZoaChluo0m0vbiJlGMt2GXvL4LVPQEjt8kSpHI3IBq5Rez8fg+XeH3cneztq+C7A==}
 
+  '@fastify/deepmerge@3.2.1':
+    resolution: {integrity: sha512-N5Oqvltoa2r9z1tbx4xjky0oRR60v+T47Ic4J1ukoVQcptLOrIdRnCSdTGmOmajZuHVKlTnfcmrjyqsGEW1ztA==}
+
   '@fastify/error@4.2.0':
     resolution: {integrity: sha512-RSo3sVDXfHskiBZKBPRgnQTtIqpi/7zhJOEmAxCiBcM7d0uwdGdxLlsCaLzGs8v8NnxIRlfG0N51p5yFaOentQ==}
 
@@ -356,17 +362,25 @@ packages:
   '@mercuryworkshop/bare-mux@2.1.9':
     resolution: {integrity: sha512-fiOqWm3VP0Bl8T+0l+qnb7ab9zO+PpKVbtJvOnMsefUv6kWIaoDtqyr9hd/t4gA8oBwgtyZVqIwO2J9nKY9ylw==}
 
-  '@mercuryworkshop/epoxy-tls@2.1.18-1':
-    resolution: {integrity: sha512-2N1BYn/+FJxIbRw+sipbl3mQPinRflqQDB9HGAXJEVj4Ok4FIlTlS4fO2cpXKEq5yoD3oaKb8GyNaQfndNui9w==}
+  '@mercuryworkshop/epoxy-tls@2.1.19-1':
+    resolution: {integrity: sha512-lF3WVDmKDWfClgFaDm1OAGI6PStcUUKUjNh2AJbfmLXEGh+dT4nvsuTY2QGRImnajCboIRyrpx9eGNY0egZSVg==}
 
-  '@mercuryworkshop/epoxy-transport@2.1.28':
-    resolution: {integrity: sha512-lv/Kfdn37y8ZCXQaIT3Ebj4OSztBqeXdbR9rchbHQBKIw/fNSQJLGNBHV5ScXSzqt7NCwv8ZiZx7urRyk7Ua/Q==}
+  '@mercuryworkshop/epoxy-transport@3.0.1':
+    resolution: {integrity: sha512-8YzL73WaXZJLBRydmmY6NNPt5leB8ygBYuqgLn4+pGQ+wgi+JUC7ZdBQrA86TR6Oue3twbdfDvLRp48bzZ7DSw==}
 
-  '@mercuryworkshop/libcurl-transport@1.5.2':
-    resolution: {integrity: sha512-E0tD/3W6HE99ypc7CStpchU6xs+TP5u2vms/9q/46BShblB2pbRCNeXHBlvXqdz97nh2Xh4A68DryDt5CM29Dg==}
+  '@mercuryworkshop/libcurl-transport@2.0.5':
+    resolution: {integrity: sha512-YkAPEAWTEUZZkEOejmRQJxNHw90+kNQnoiSqa5H2sExHBXXdGSXEtg7/35A53U8MDVaznpAwjVbXRONSsfatzw==}
 
-  '@mercuryworkshop/scramjet@1.1.0':
-    resolution: {integrity: sha512-T/9GZqAQX42eYr/t6VGR2m9J4BtIuncRkANo8hBVTGskrr522yuhaADhSu+65DYlhUyQnLUjDikuNYzlgv0Ejw==}
+  '@mercuryworkshop/proxy-transports@1.0.2':
+    resolution: {integrity: sha512-zgD+JMYNSx8LxVLWwGPPVnoDHjoh1GqqwUJIjhIwCwhy+Z7g+MhmiTJvCcRPAo7qXXbqJwIrpBJduRSOrjMV7g==}
+
+  '@mercuryworkshop/scramjet-controller@0.0.13':
+    resolution: {integrity: sha512-BGmHOWI9e0zwaCCkE7VcB7ZKjeFb4E+Rwi+1J3RLrZXp09vwBurSaun6g+bj1lINjzC62UpJaxpwhQ2zs4q8zQ==}
+    peerDependencies:
+      '@mercuryworkshop/scramjet': '*'
+
+  '@mercuryworkshop/scramjet@2.0.67-alpha.1':
+    resolution: {integrity: sha512-i1NhVoIF+cKj/jXy3d9G3hoPplDAooujfQFNZKf8jTGQVPrm6WgDr1AoZBx8vPRL2IypdyXiNVAWyBWYOeITMQ==}
 
   '@pinojs/redact@0.4.0':
     resolution: {integrity: sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg==}
@@ -752,15 +766,31 @@ packages:
   dom-serializer@2.0.0:
     resolution: {integrity: sha512-wIkAryiqt/nV5EQKqQpo3SToSOV9J0DnbJqwK7Wv/Trc92zIAYZ4FlMu+JPFW1DfGFt81ZTCGgDEabffXeLyJg==}
 
+  dom-serializer@3.1.1:
+    resolution: {integrity: sha512-4MEa38/QexBob6gFNwu+EGdWvhJ1OKuNwdYY3Y3NyeWDQfnGeDYQUDfIRzWu5B5gsv03so2Uxd28YC6zrsx3Lw==}
+    engines: {node: '>=20.19.0'}
+
   domelementtype@2.3.0:
     resolution: {integrity: sha512-OLETBj6w0OsagBwdXnPdN0cnMfF9opN69co+7ZrbfPGrdpPVNBUj02spi6B1N7wChLQiPn4CSH/zJvXw56gmHw==}
+
+  domelementtype@3.0.0:
+    resolution: {integrity: sha512-umCQid3jKbDmVjx8jGaW7uUykm4DEUeyV21hPxNMo2nV955DhUThwqyOIDtreepP31hl84X7G5U9ZfsWvIB3Pg==}
+    engines: {node: '>=20.19.0'}
 
   domhandler@5.0.3:
     resolution: {integrity: sha512-cgwlv/1iFQiFnU96XXgROh8xTeetsnJiDsTc7TYCLFd9+/WNkIqPTxiM/8pSd8VIrhXGTf1Ny1q1hquVqDJB5w==}
     engines: {node: '>= 4'}
 
+  domhandler@6.0.1:
+    resolution: {integrity: sha512-gYzvtM72ZtxQO0T048kd6HWSbbGCNOUwcnfQ01cqIJ4X2IYKFFHZ5mKvrQETcFXxsRObZulDaKmy//R7TPtsBg==}
+    engines: {node: '>=20.19.0'}
+
   domutils@3.2.2:
     resolution: {integrity: sha512-6kZKyUajlDuqlHKVX1w7gyslj9MPIXzIFiz/rGu35uC1wMi+kMhQwGhl4lt9unC9Vb9INnY9Z3/ZA3+FhASLaw==}
+
+  domutils@4.0.2:
+    resolution: {integrity: sha512-qI4JLRKnSzqFqr7hAlS5xQDusBCjKSEG4t4+7aNrIQMHBcsC2TGEhuyABJdYkgSewL57PNLYEiibY2iPKhKpaA==}
+    engines: {node: '>=20.19.0'}
 
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
@@ -786,6 +816,10 @@ packages:
   entities@6.0.1:
     resolution: {integrity: sha512-aN97NXWF6AWBTahfVOIrB/NShkzi5H7F9r1s9mD3cDj4Ko5f2qhhVoYMibXF7GlLveb/D2ioWay8lxI97Ven3g==}
     engines: {node: '>=0.12'}
+
+  entities@8.0.0:
+    resolution: {integrity: sha512-zwfzJecQ/Uej6tusMqwAqU/6KL2XaB2VZ2Jg54Je6ahNBGNH6Ek6g3jjNCF0fG9EWQKGZNddNjU5F1ZQn/sBnA==}
+    engines: {node: '>=20.19.0'}
 
   es-abstract@1.24.2:
     resolution: {integrity: sha512-2FpH9Q5i2RRwyEP1AylXe6nYLR5OhaJTZwmlcP0dL/+JCbgg7yyEo/sEK6HeGZRf3dFpWwThaRHVApXSkW3xeg==}
@@ -1046,8 +1080,9 @@ packages:
     resolution: {integrity: sha512-eSmmWE5bZTK2Nou4g0AI3zZ9rswp7GRKoKXS1BLUkvPviOqs4YTN1djQIqrXy9k5gEtdLPy86JjRwsNM9tnDcA==}
     engines: {node: '>=0.10.0'}
 
-  htmlparser2@10.0.0:
-    resolution: {integrity: sha512-TwAZM+zE5Tq3lrEHvOlvwgj1XLWQCtaaibSN11Q+gGBAS7Y1uZSWwXXRe4iF6OXnaq1riyQAPFOBtYc77Mxq0g==}
+  htmlparser2@12.0.0:
+    resolution: {integrity: sha512-Tz7u1i95/g2x2jz81+x0FBVhBhY5aRTvD3tXXdFaljuNdzDLJ8UGNRrTcj2cgQvAg3iW/h77Fz15nLW0L0CrZw==}
+    engines: {node: '>=20.19.0'}
 
   http-assert@1.5.0:
     resolution: {integrity: sha512-uPpH7OKX4H25hBmU6G1jWNaqJGpTXxey+YOUizJUAgu0AjLUeC8D73hTrhvDS5D+GJN1DN1+hhc/eF/wpxtp0w==}
@@ -2194,6 +2229,8 @@ snapshots:
       ajv-formats: 3.0.1(ajv@8.20.0)
       fast-uri: 3.1.2
 
+  '@fastify/deepmerge@3.2.1': {}
+
   '@fastify/error@4.2.0': {}
 
   '@fastify/fast-json-stringify-compiler@5.0.3':
@@ -2256,26 +2293,33 @@ snapshots:
 
   '@mercuryworkshop/bare-mux@2.1.9': {}
 
-  '@mercuryworkshop/epoxy-tls@2.1.18-1': {}
+  '@mercuryworkshop/epoxy-tls@2.1.19-1': {}
 
-  '@mercuryworkshop/epoxy-transport@2.1.28':
+  '@mercuryworkshop/epoxy-transport@3.0.1':
     dependencies:
-      '@mercuryworkshop/epoxy-tls': 2.1.18-1
+      '@mercuryworkshop/epoxy-tls': 2.1.19-1
 
-  '@mercuryworkshop/libcurl-transport@1.5.2':
+  '@mercuryworkshop/libcurl-transport@2.0.5':
     dependencies:
       libcurl.js: 0.7.4
 
-  '@mercuryworkshop/scramjet@1.1.0':
+  '@mercuryworkshop/proxy-transports@1.0.2': {}
+
+  '@mercuryworkshop/scramjet-controller@0.0.13(@mercuryworkshop/scramjet@2.0.67-alpha.1)':
     dependencies:
-      '@mercuryworkshop/bare-mux': 2.1.9
+      '@fastify/deepmerge': 3.2.1
+      '@mercuryworkshop/proxy-transports': 1.0.2
+      '@mercuryworkshop/scramjet': 2.0.67-alpha.1
+
+  '@mercuryworkshop/scramjet@2.0.67-alpha.1':
+    dependencies:
+      '@mercuryworkshop/proxy-transports': 1.0.2
       dom-serializer: 2.0.0
       domhandler: 5.0.3
       domutils: 3.2.2
-      htmlparser2: 10.0.0
+      htmlparser2: 12.0.0
       idb: 8.0.3
       parse-domain: 8.3.0
-      set-cookie-parser: 2.7.2
 
   '@pinojs/redact@0.4.0': {}
 
@@ -2667,17 +2711,35 @@ snapshots:
       domhandler: 5.0.3
       entities: 4.5.0
 
+  dom-serializer@3.1.1:
+    dependencies:
+      domelementtype: 3.0.0
+      domhandler: 6.0.1
+      entities: 8.0.0
+
   domelementtype@2.3.0: {}
+
+  domelementtype@3.0.0: {}
 
   domhandler@5.0.3:
     dependencies:
       domelementtype: 2.3.0
+
+  domhandler@6.0.1:
+    dependencies:
+      domelementtype: 3.0.0
 
   domutils@3.2.2:
     dependencies:
       dom-serializer: 2.0.0
       domelementtype: 2.3.0
       domhandler: 5.0.3
+
+  domutils@4.0.2:
+    dependencies:
+      dom-serializer: 3.1.1
+      domelementtype: 3.0.0
+      domhandler: 6.0.1
 
   dunder-proto@1.0.1:
     dependencies:
@@ -2699,6 +2761,8 @@ snapshots:
   entities@4.5.0: {}
 
   entities@6.0.1: {}
+
+  entities@8.0.0: {}
 
   es-abstract@1.24.2:
     dependencies:
@@ -3047,12 +3111,12 @@ snapshots:
     dependencies:
       parse-passwd: 1.0.0
 
-  htmlparser2@10.0.0:
+  htmlparser2@12.0.0:
     dependencies:
-      domelementtype: 2.3.0
-      domhandler: 5.0.3
-      domutils: 3.2.2
-      entities: 6.0.1
+      domelementtype: 3.0.0
+      domhandler: 6.0.1
+      domutils: 4.0.2
+      entities: 8.0.0
 
   http-assert@1.5.0:
     dependencies:
