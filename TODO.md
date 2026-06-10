@@ -26,6 +26,7 @@ This will be our nonexhaustive todo list for InvisiProxy LTS v6.x.x and above. R
 - [ ] Add bookmarks menu (source wise already present pretty much)
 - [ ] Add Chii + ensuring users can access devtools while browsing; or utilize Scramjet playground instead - partial
 - [ ] Allow for custom SOCK5 proxy layering (HTTP and SOCKS4 scheme as well)
+- [ ] Add selector for default proxy; behavior is upon clicking on logo in omnibox it will direct back to the selected proxy in Settings
 - [x] Omnibox should state what the current site the user is on like a proper URL bar 
 - [x] Improve adblocking functions on site using Workerware + a pre-bundled uBlock Origin
 - [x] Implement advanced data URI system
