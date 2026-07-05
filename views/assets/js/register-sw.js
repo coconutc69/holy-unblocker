@@ -131,8 +131,10 @@
           visibleFrame instanceof HTMLIFrameElement &&
           existing.frame?.element !== visibleFrame
         ) {
-          existing.frame = existing.controller.createFrame(visibleFrame);
-        }
+          existing.frame = existing.controller.createFrame(visibleFrame, {
+            plugins: buildFramePlugins(),
+          });
+        } 
         window.dispatchEvent(new Event('s-ready'));
         return;
       }
